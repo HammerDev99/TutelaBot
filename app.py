@@ -1942,11 +1942,15 @@ with chat_history_container:
 # Chat input con soporte nativo para adjuntar archivos
 # Extraer extensiones sin el punto para el parámetro file_type
 file_types = [ext[1:] for ext in ALLOWED_EXTENSIONS]  # Quitar el punto inicial
+
+# Mostrar mensaje sobre formatos permitidos
+st.caption(APP_IDENTITY["allowed_formats_message"])
+
+# Input de chat con soporte para archivos
 prompt = st.chat_input(
     APP_IDENTITY["chat_placeholder"],
     accept_file=True,
     file_type=file_types,
-    help=APP_IDENTITY["allowed_formats_message"],
 )
 
 # Procesar la entrada del usuario
