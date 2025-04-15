@@ -84,6 +84,8 @@ APP_IDENTITY = {
     - Sugerir cambios para hacer más efectivos los documentos
 
     **Nota sobre privacidad**: Los documentos se procesan localmente y no se almacenan permanentemente.
+
+    **Formatos soportados**: PDF (.pdf), Word (.docx), Texto (.txt), Imágenes (.jpg, .jpeg, .png). Otros formatos no serán procesados.
     """,
     # Texto de la interfaz de usuario
     "chat_placeholder": "¿Cómo puedo ayudarte con la Acción de Tutela o el Derecho de Petición hoy?",
@@ -121,7 +123,7 @@ APP_IDENTITY = {
     # Footer text
     "footer_text": """
     {developer}
-    
+
     [GitHub]({github_url}) | [Website]({website_url}) | [LinkedIn]({linkedin_url}) | [Instagram]({instagram_url}) | [Twitter]({twitter_url}) | [Facebook]({facebook_url}) | [WhatsApp]({whatsapp_url})
     """,
     # Log configuration
@@ -129,6 +131,8 @@ APP_IDENTITY = {
     # Document naming (for exports and files)
     "document_prefix": "tutelabot",
     "conversation_export_name": "tutelabot_conversacion",
+    # Mensajes sobre formatos de archivo
+    "allowed_formats_message": "Formatos permitidos: PDF (.pdf), Word (.docx), Texto (.txt), Imágenes (.jpg, .jpeg, .png)",
 }
 
 # Configuración avanzada de logging - Implementación multi-destino
@@ -670,7 +674,95 @@ def export_chat_to_markdown(messages):
     return md_content
 
 
+# Definición de formatos permitidos y sus extensiones
+ALLOWED_FILE_FORMATS = {
+    "PDF": [".pdf"],
+    "Imagen": [".jpg", ".jpeg", ".png"],
+    "Texto": [".txt"],
+    "Word": [".docx"],
+}
+
+# Lista plana de todas las extensiones permitidas
+ALLOWED_EXTENSIONS = [ext for exts in ALLOWED_FILE_FORMATS.values() for ext in exts]
+
+
 # Funciones de OCR con Mistral
+@handle_error(max_retries=1)
+def validate_file_format(file):
+    """
+    Valida que el archivo tenga un formato permitido y que su contenido
+    sea consistente con la extensión declarada.
+
+    Parámetros:
+        file: Objeto de archivo cargado por el usuario mediante Streamlit
+
+    Retorno:
+        tuple: (es_válido, tipo_documento, mensaje_error)
+    """
+    file_type = None
+
+    # Verificar que el archivo tenga nombre
+    if not hasattr(file, "name"):
+        return False, None, "El archivo no tiene nombre"
+
+    # Obtener extensión y verificar que esté permitida
+    file_name = file.name.lower()
+    file_ext = os.path.splitext(file_name)[1]
+
+    if file_ext not in ALLOWED_EXTENSIONS:
+        allowed_exts = ", ".join(ALLOWED_EXTENSIONS)
+        return False, None, f"Formato de archivo no permitido. Use: {allowed_exts}"
+
+    # Determinar el tipo de documento según la extensión
+    for doc_type, extensions in ALLOWED_FILE_FORMATS.items():
+        if file_ext in extensions:
+            file_type = doc_type
+            break
+
+    # Verificar contenido según el tipo de archivo
+    try:
+        # Guardar posición del cursor
+        position = file.tell()
+
+        # Verificar contenido según tipo
+        if file_type == "PDF":
+            # Verificar firma de PDF
+            header = file.read(8)
+            file.seek(position)  # Restaurar posición
+
+            if not header.startswith(b"%PDF"):
+                return False, None, "El archivo no es un PDF válido"
+
+        elif file_type == "Imagen":
+            # Intentar abrir como imagen
+            try:
+                img = Image.open(file)
+                img.verify()  # Verificar que la imagen sea válida
+                file.seek(position)  # Restaurar posición
+            except Exception as e:
+                file.seek(position)  # Restaurar posición
+                return False, None, f"El archivo no es una imagen válida: {str(e)}"
+
+        elif file_type == "Word":
+            # Verificar firma de archivo DOCX (ZIP)
+            header = file.read(4)
+            file.seek(position)  # Restaurar posición
+
+            if not header.startswith(b"PK\x03\x04"):  # Firma de archivos ZIP/DOCX
+                return False, None, "El archivo no es un documento Word válido"
+
+    except Exception as e:
+        # Restaurar posición en caso de error
+        try:
+            file.seek(position)
+        except:
+            pass
+        return False, None, f"Error validando el archivo: {str(e)}"
+
+    # Si llegamos aquí, el archivo es válido
+    return True, file_type, None
+
+
 @handle_error(max_retries=1)
 def detect_document_type(file):
     """
@@ -909,7 +1001,7 @@ def process_document_with_mistral_ocr(api_key, file_bytes, file_type, file_name)
     Parámetros:
         api_key: API key de Mistral
         file_bytes: Bytes del archivo
-        file_type: Tipo de archivo ("PDF" o "Imagen")
+        file_type: Tipo de archivo ("PDF", "Imagen", "Texto" o "Word")
         file_name: Nombre del archivo
 
     Retorno:
@@ -961,30 +1053,78 @@ def process_document_with_mistral_ocr(api_key, file_bytes, file_type, file_name)
                     status.update(
                         label=f"Error al validar PDF: {str(e)}", state="error"
                     )
-
-                    # Intentar procesar como imagen si el PDF falló
-                    logging.info("Intentando procesar como imagen alternativa...")
-                    try:
-                        optimized_bytes, mime_type = prepare_image_for_ocr(file_bytes)
-                        encoded_file = base64.b64encode(optimized_bytes).decode("utf-8")
-                        document = {
-                            "type": "image_url",
-                            "image_url": f"data:{mime_type};base64,{encoded_file}",
-                        }
-                    except Exception as e2:
-                        return {
-                            "error": f"El archivo no es un PDF válido ni una imagen: {str(e2)}"
-                        }
-            else:  # Imagen
+                    return {"error": f"El archivo no es un PDF válido: {str(e)}"}
+            elif file_type == "Imagen":
                 # Optimizar imagen para mejores resultados
-                optimized_bytes, mime_type = prepare_image_for_ocr(file_bytes)
+                try:
+                    optimized_bytes, mime_type = prepare_image_for_ocr(file_bytes)
 
-                # Codificar en base64
-                encoded_file = base64.b64encode(optimized_bytes).decode("utf-8")
-                document = {
-                    "type": "image_url",
-                    "image_url": f"data:{mime_type};base64,{encoded_file}",
-                }
+                    # Codificar en base64
+                    encoded_file = base64.b64encode(optimized_bytes).decode("utf-8")
+                    document = {
+                        "type": "image_url",
+                        "image_url": f"data:{mime_type};base64,{encoded_file}",
+                    }
+                except Exception as e:
+                    logging.error(f"Error al procesar imagen: {str(e)}")
+                    status.update(
+                        label=f"Error al procesar imagen: {str(e)}", state="error"
+                    )
+                    return {"error": f"El archivo no es una imagen válida: {str(e)}"}
+            elif file_type == "Word" or file_type == "Texto":
+                # Para documentos Word y texto, convertir a imagen para OCR
+                try:
+                    # Extraer texto directamente si es posible
+                    if file_type == "Texto":
+                        # Para archivos de texto, leer directamente
+                        try:
+                            text_content = file_bytes.decode("utf-8")
+                            return {"text": text_content, "format": "text"}
+                        except UnicodeDecodeError:
+                            # Intentar con otras codificaciones comunes
+                            for encoding in ["latin-1", "cp1252", "iso-8859-1"]:
+                                try:
+                                    text_content = file_bytes.decode(encoding)
+                                    return {"text": text_content, "format": "text"}
+                                except UnicodeDecodeError:
+                                    continue
+
+                    # Si llegamos aquí, no pudimos extraer texto directamente
+                    # Intentar convertir a imagen para OCR
+                    status.update(
+                        label=f"Convirtiendo documento {file_name} para OCR...",
+                        state="running",
+                    )
+
+                    # Codificar en base64 y enviar como documento
+                    encoded_file = base64.b64encode(file_bytes).decode("utf-8")
+
+                    # Para Word, usar document_url
+                    if file_type == "Word":
+                        document = {
+                            "type": "document_url",
+                            "document_url": f"data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,{encoded_file}",
+                        }
+                    else:
+                        # Para texto, usar document_url con tipo text/plain
+                        document = {
+                            "type": "document_url",
+                            "document_url": f"data:text/plain;base64,{encoded_file}",
+                        }
+                except Exception as e:
+                    logging.error(f"Error al procesar documento {file_type}: {str(e)}")
+                    status.update(
+                        label=f"Error al procesar documento: {str(e)}", state="error"
+                    )
+                    return {
+                        "error": f"Error al procesar documento {file_type}: {str(e)}"
+                    }
+            else:
+                # Tipo de documento no soportado
+                error_msg = f"Tipo de documento no soportado: {file_type}"
+                logging.error(error_msg)
+                status.update(label=error_msg, state="error")
+                return {"error": error_msg}
 
             status.update(
                 label="Enviando documento a la API de Mistral...", state="running"
@@ -1725,6 +1865,7 @@ with st.sidebar:
     st.markdown("---")
     st.subheader("📄 Procesamiento de documentos")
     st.info(APP_IDENTITY["document_processing_info"])
+    st.caption(APP_IDENTITY["allowed_formats_message"])
 
     # Footer en la barra lateral
     st.markdown("---")
@@ -1799,10 +1940,13 @@ with chat_history_container:
             st.markdown(APP_IDENTITY["welcome_message"])
 
 # Chat input con soporte nativo para adjuntar archivos
+# Extraer extensiones sin el punto para el parámetro file_type
+file_types = [ext[1:] for ext in ALLOWED_EXTENSIONS]  # Quitar el punto inicial
 prompt = st.chat_input(
     APP_IDENTITY["chat_placeholder"],
     accept_file=True,
-    file_type=["pdf", "docx", "txt", "jpg", "jpeg", "png"],
+    file_type=file_types,
+    help=APP_IDENTITY["allowed_formats_message"],
 )
 
 # Procesar la entrada del usuario
@@ -1825,16 +1969,26 @@ if prompt:
     # Si hay archivos adjuntos, procesarlos con OCR
     if user_files:
         with st.spinner("Procesando documentos con OCR..."):
+            valid_files = 0
+            invalid_files = 0
+
             for file in user_files:
+                # Validar el formato del archivo antes de procesarlo
+                is_valid, file_type, error_message = validate_file_format(file)
+
+                if not is_valid:
+                    # Mostrar error y continuar con el siguiente archivo
+                    st.error(f"Error en archivo {file.name}: {error_message}")
+                    invalid_files += 1
+                    continue
+
+                # Si el archivo es válido, procesarlo
                 if file.name not in st.session_state.uploaded_files:
                     st.session_state.uploaded_files.append(file.name)
 
                 # Leer el contenido del archivo
                 file_bytes = file.read()
                 file.seek(0)  # Restaurar el puntero del archivo
-
-                # Detectar tipo de documento
-                file_type = detect_document_type(file)
 
                 # Procesar con OCR de Mistral
                 try:
@@ -1847,6 +2001,7 @@ if prompt:
                         # Guardar en la sesión para referencia futura
                         st.session_state.document_contents[file.name] = ocr_results
                         st.success(f"Documento {file.name} procesado correctamente")
+                        valid_files += 1
                     else:
                         error_msg = ocr_results.get(
                             "error", "Error desconocido durante el procesamiento"
@@ -1858,6 +2013,18 @@ if prompt:
                         st.session_state.document_contents[file.name] = ocr_results
                 except Exception as e:
                     st.error(f"Error procesando {file.name}: {str(e)}")
+
+            # Mostrar resumen de procesamiento
+            if invalid_files > 0:
+                st.warning(
+                    f"{invalid_files} archivo(s) no válido(s) fueron omitidos. {APP_IDENTITY['allowed_formats_message']}"
+                )
+
+                # Si todos los archivos fueron inválidos, mostrar mensaje más claro
+                if invalid_files == len(user_files) and len(user_files) > 0:
+                    st.error(
+                        "No se pudo procesar ningún archivo. Verifique que los archivos cumplan con los formatos permitidos y no estén corruptos."
+                    )
 
     # Generar un mensaje automático si solo hay archivos sin texto
     if not user_text and user_files:

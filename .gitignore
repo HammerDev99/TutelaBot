@@ -20,3 +20,4 @@ app_full.py
 
 # Archivos de configuración de Streamlit
 .streamlit/
+logs/
