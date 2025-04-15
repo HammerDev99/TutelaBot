@@ -85,7 +85,7 @@ APP_IDENTITY = {
 
     **Nota sobre privacidad**: Los documentos se procesan localmente y no se almacenan permanentemente.
 
-    **Formatos soportados**: PDF (.pdf), Word (.docx), Texto (.txt), Imágenes (.jpg, .jpeg, .png). Otros formatos no serán procesados.
+    **Formatos soportados**: PDF (.pdf), Texto (.txt), Imágenes (.jpg, .jpeg, .png). Otros formatos no serán procesados.
     """,
     # Texto de la interfaz de usuario
     "chat_placeholder": "¿Cómo puedo ayudarte con la Acción de Tutela o el Derecho de Petición hoy?",
@@ -132,7 +132,7 @@ APP_IDENTITY = {
     "document_prefix": "tutelabot",
     "conversation_export_name": "tutelabot_conversacion",
     # Mensajes sobre formatos de archivo
-    "allowed_formats_message": "Formatos permitidos: PDF (.pdf), Word (.docx), Texto (.txt), Imágenes (.jpg, .jpeg, .png)",
+    "allowed_formats_message": "Formatos permitidos: PDF (.pdf), Texto (.txt), Imágenes (.jpg, .jpeg, .png)",
 }
 
 # Configuración avanzada de logging - Implementación multi-destino
@@ -679,7 +679,7 @@ ALLOWED_FILE_FORMATS = {
     "PDF": [".pdf"],
     "Imagen": [".jpg", ".jpeg", ".png"],
     "Texto": [".txt"],
-    "Word": [".docx"],
+    # "Word": [".docx"]  # Eliminado porque la API de Mistral no acepta documentos Word en base64
 }
 
 # Lista plana de todas las extensiones permitidas
@@ -743,13 +743,7 @@ def validate_file_format(file):
                 file.seek(position)  # Restaurar posición
                 return False, None, f"El archivo no es una imagen válida: {str(e)}"
 
-        elif file_type == "Word":
-            # Verificar firma de archivo DOCX (ZIP)
-            header = file.read(4)
-            file.seek(position)  # Restaurar posición
-
-            if not header.startswith(b"PK\x03\x04"):  # Firma de archivos ZIP/DOCX
-                return False, None, "El archivo no es un documento Word válido"
+        # Eliminada la validación de archivos Word
 
     except Exception as e:
         # Restaurar posición en caso de error
@@ -1071,54 +1065,41 @@ def process_document_with_mistral_ocr(api_key, file_bytes, file_type, file_name)
                         label=f"Error al procesar imagen: {str(e)}", state="error"
                     )
                     return {"error": f"El archivo no es una imagen válida: {str(e)}"}
-            elif file_type == "Word" or file_type == "Texto":
-                # Para documentos Word y texto, convertir a imagen para OCR
+            elif file_type == "Texto":
+                # Para archivos de texto, extraer contenido directamente
                 try:
-                    # Extraer texto directamente si es posible
-                    if file_type == "Texto":
-                        # Para archivos de texto, leer directamente
-                        try:
-                            text_content = file_bytes.decode("utf-8")
-                            return {"text": text_content, "format": "text"}
-                        except UnicodeDecodeError:
-                            # Intentar con otras codificaciones comunes
-                            for encoding in ["latin-1", "cp1252", "iso-8859-1"]:
-                                try:
-                                    text_content = file_bytes.decode(encoding)
-                                    return {"text": text_content, "format": "text"}
-                                except UnicodeDecodeError:
-                                    continue
+                    # Intentar leer con diferentes codificaciones
+                    try:
+                        text_content = file_bytes.decode("utf-8")
+                        return {"text": text_content, "format": "text"}
+                    except UnicodeDecodeError:
+                        # Intentar con otras codificaciones comunes
+                        for encoding in ["latin-1", "cp1252", "iso-8859-1"]:
+                            try:
+                                text_content = file_bytes.decode(encoding)
+                                return {"text": text_content, "format": "text"}
+                            except UnicodeDecodeError:
+                                continue
 
-                    # Si llegamos aquí, no pudimos extraer texto directamente
-                    # Intentar convertir a imagen para OCR
+                    # Si llegamos aquí, no pudimos decodificar el texto
+                    # Intentar enviar como documento plano
                     status.update(
-                        label=f"Convirtiendo documento {file_name} para OCR...",
+                        label=f"Convirtiendo documento de texto {file_name} para OCR...",
                         state="running",
                     )
 
                     # Codificar en base64 y enviar como documento
                     encoded_file = base64.b64encode(file_bytes).decode("utf-8")
-
-                    # Para Word, usar document_url
-                    if file_type == "Word":
-                        document = {
-                            "type": "document_url",
-                            "document_url": f"data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,{encoded_file}",
-                        }
-                    else:
-                        # Para texto, usar document_url con tipo text/plain
-                        document = {
-                            "type": "document_url",
-                            "document_url": f"data:text/plain;base64,{encoded_file}",
-                        }
+                    document = {
+                        "type": "document_url",
+                        "document_url": f"data:text/plain;base64,{encoded_file}",
+                    }
                 except Exception as e:
-                    logging.error(f"Error al procesar documento {file_type}: {str(e)}")
+                    logging.error(f"Error al procesar documento de texto: {str(e)}")
                     status.update(
                         label=f"Error al procesar documento: {str(e)}", state="error"
                     )
-                    return {
-                        "error": f"Error al procesar documento {file_type}: {str(e)}"
-                    }
+                    return {"error": f"Error al procesar documento de texto: {str(e)}"}
             else:
                 # Tipo de documento no soportado
                 error_msg = f"Tipo de documento no soportado: {file_type}"
