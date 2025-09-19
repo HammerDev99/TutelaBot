@@ -15,6 +15,10 @@ TutelaBot es un asistente virtual especializado en los mecanismos constitucional
 
 Este asistente está diseñado para proporcionar información clara y accesible sobre estos mecanismos fundamentales, ayudando a ciudadanos, abogados, estudiantes de derecho y funcionarios públicos a comprender su naturaleza, requisitos, procedimientos y plazos, facilitando así el acceso efectivo a la justicia y la protección de los derechos fundamentales en Colombia.
 
+### 🍴 Fork del Proyecto Original
+
+Este proyecto es un fork del trabajo original de **Alexander Oviedo Fadul**, adaptado y ajustado para necesidades específicas, incluyendo la configuración de API keys y Assistant ID personalizados para uso general.
+
 ## 🔍 Funcionalidades Principales
 
 ### 1. Acción de Tutela
@@ -181,11 +185,17 @@ Este proyecto está bajo la licencia MIT. Consulta el archivo [LICENSE](LICENSE)
 - **Corte Constitucional de Colombia** por su valioso desarrollo jurisprudencial
 - **Comunidad jurídica colombiana** por su contribución al derecho constitucional
 
-## 👤 Autor
+## 👤 Autores
 
+### 🎯 Desarrollador Original
 Creado con ❤️ por [Alexander Oviedo Fadul](https://github.com/bladealex9848)
 
 [GitHub](https://github.com/bladealex9848) | [Website](https://alexanderoviedofadul.dev) | [LinkedIn](https://www.linkedin.com/in/alexander-oviedo-fadul/) | [Instagram](https://www.instagram.com/alexander.oviedo.fadul) | [Twitter](https://twitter.com/alexanderofadul) | [Facebook](https://www.facebook.com/alexanderof/) | [WhatsApp](https://api.whatsapp.com/send?phone=573015930519&text=Hola%20!Quiero%20conversar%20contigo!%20)
+
+### 🍴 Adaptador del Fork
+Adaptado y personalizado por [Daniel Arbeláez](https://github.com/HammerDev99) - Legal Tech Developer 🚀
+
+[GitHub](https://github.com/HammerDev99) | [Website](http://portfolio.sprintjudicial.com/) | [Blog](https://blog.sprintjudicial.com/) | [LinkedIn](https://www.linkedin.com/in/daniel-arbelaez-/) | [Instagram](https://www.instagram.com/daniel_arbe99/) | [Twitter](https://x.com/hammerdev99) | [YouTube](http://youtube.com/@daainti/videos) | [Email](mailto:arbe.94@hotmail.com)
 
 ---
 

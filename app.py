@@ -30,7 +30,7 @@ APP_IDENTITY = {
     "icon": "🧑‍⚖️📝",
     "tagline": "Su Asistente Legal en Acción de Tutela y Derecho de Petición",
     "full_title": "¡Bienvenido a TutelaBot! 🧑‍⚖️📝",
-    # Información del desarrollador
+    # Información del desarrollador original
     "developer": "Alexander Oviedo Fadul",
     "github_url": "https://github.com/bladealex9848",
     "website_url": "https://alexanderoviedofadul.dev/",
@@ -41,6 +41,16 @@ APP_IDENTITY = {
     "facebook_url": "https://www.facebook.com/alexanderof/",
     "whatsapp_url": "https://api.whatsapp.com/send?phone=573015930519&text=Hola%20!Quiero%20conversar%20contigo!%20)",
     "repository_url": "https://github.com/bladealex9848/TutelaBot",
+    # Información del adaptador del fork
+    "fork_developer": "Daniel Arbeláez",
+    "fork_github_url": "https://github.com/HammerDev99",
+    "fork_website_url": "http://portfolio.sprintjudicial.com/",
+    "fork_blog_url": "https://blog.sprintjudicial.com/",
+    "fork_linkedin_url": "https://www.linkedin.com/in/daniel-arbelaez-/",
+    "fork_instagram_url": "https://www.instagram.com/daniel_arbe99/",
+    "fork_twitter_url": "https://x.com/hammerdev99",
+    "fork_youtube_url": "http://youtube.com/@daainti/videos",
+    "fork_email": "arbe.94@hotmail.com",
     # Descripción de la aplicación - formas corta y larga
     "short_description": "Tu asistente para comprender y utilizar la Acción de Tutela y el Derecho de Petición en Colombia.",
     "long_description": """
@@ -123,9 +133,13 @@ APP_IDENTITY = {
     },
     # Footer text
     "footer_text": """
+    **Desarrollador Original:**
     {developer}
-
     [GitHub]({github_url}) | [Website]({website_url}) | [LinkedIn]({linkedin_url}) | [Instagram]({instagram_url}) | [Twitter]({twitter_url}) | [Facebook]({facebook_url}) | [WhatsApp]({whatsapp_url})
+
+    **Adaptador del Fork:**
+    {fork_developer} - Legal Tech Developer 🚀
+    [GitHub]({fork_github_url}) | [Website]({fork_website_url}) | [Blog]({fork_blog_url}) | [LinkedIn]({fork_linkedin_url}) | [Instagram]({fork_instagram_url}) | [Twitter]({fork_twitter_url}) | [YouTube]({fork_youtube_url}) | [Email](mailto:{fork_email})
     """,
     # Log configuration
     "log_name": "tutelabot",
@@ -1862,6 +1876,15 @@ with st.sidebar:
             twitter_url=APP_IDENTITY["twitter_url"],
             facebook_url=APP_IDENTITY["facebook_url"],
             whatsapp_url=APP_IDENTITY["whatsapp_url"],
+            fork_developer=APP_IDENTITY["fork_developer"],
+            fork_github_url=APP_IDENTITY["fork_github_url"],
+            fork_website_url=APP_IDENTITY["fork_website_url"],
+            fork_blog_url=APP_IDENTITY["fork_blog_url"],
+            fork_linkedin_url=APP_IDENTITY["fork_linkedin_url"],
+            fork_instagram_url=APP_IDENTITY["fork_instagram_url"],
+            fork_twitter_url=APP_IDENTITY["fork_twitter_url"],
+            fork_youtube_url=APP_IDENTITY["fork_youtube_url"],
+            fork_email=APP_IDENTITY["fork_email"],
             app_name=APP_IDENTITY["name"],
             app_version=APP_IDENTITY["version"],
             current_date=datetime.now().strftime("%Y-%m-%d"),
