@@ -114,6 +114,7 @@ APP_IDENTITY = {
     "response_error": "No se pudo obtener respuesta. Por favor, intente de nuevo.",
     "config_success": "✅ Configuración completa",
     "config_warning": "⚠️ Falta configurar: {missing_items}",
+    "config_needed": "❌ **Configuración incompleta**: {app_name} necesita que configures las claves API y el ID del asistente en el archivo `.streamlit/secrets.toml` o como variables de entorno.",
     # Configuración del menú
     "menu_items": {
         "Get Help": "https://www.corteconstitucional.gov.co",
