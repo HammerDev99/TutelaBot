@@ -22,3 +22,6 @@ app_full.py
 .streamlit/
 logs/
 secrets.toml
+
+# Carpetas de datos
+assets/

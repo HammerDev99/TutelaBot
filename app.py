@@ -177,6 +177,9 @@ st.set_page_config(
     menu_items=APP_IDENTITY["menu_items"],
 )
 
+# Inyectar analytics de Umami
+inject_analytics()
+
 
 # Decorador para manejo de errores con retries
 def handle_error(max_retries=2):
@@ -219,6 +222,34 @@ def handle_error(max_retries=2):
 
 
 # Sistema multicapa para reinicio de la aplicación
+def inject_analytics():
+    """
+    Inyecta el script de Umami Analytics en el head del documento
+    """
+    analytics_script = """
+    <script>
+    (function() {
+        // Verificar si el script ya está cargado para evitar duplicados
+        if (document.querySelector('script[data-website-id="7e0efd1c-6760-4812-a533-a120dde841e7"]')) {
+            return;
+        }
+
+        // Crear el elemento script
+        var script = document.createElement('script');
+        script.defer = true;
+        script.src = 'https://analytics.sprintjudicial.com/script.js';
+        script.setAttribute('data-website-id', '7e0efd1c-6760-4812-a533-a120dde841e7');
+
+        // Inyectar en el head
+        document.head.appendChild(script);
+
+        console.log('Umami Analytics inicializado correctamente');
+    })();
+    </script>
+    """
+    components.html(analytics_script, height=0, width=0)
+
+
 def rerun_app():
     """
     Sistema multicapa para reiniciar la aplicación Streamlit.
