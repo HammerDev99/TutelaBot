@@ -173,29 +173,66 @@ APP_VERSION = APP_IDENTITY["version"]
 def inject_analytics():
     """
     Inyecta el script de Umami Analytics en el head del documento
+    Usa múltiples estrategias para asegurar la carga correcta
     """
+    # Estrategia 1: Inyección directa al head con verificación robusta
     analytics_script = """
     <script>
     (function() {
-        // Verificar si el script ya está cargado para evitar duplicados
-        if (document.querySelector('script[data-website-id="7e0efd1c-6760-4812-a533-a120dde841e7"]')) {
-            return;
+        // Función para inyectar el script
+        function injectUmamiScript() {
+            // Verificar si ya existe para evitar duplicados
+            if (document.querySelector('script[data-website-id="7e0efd1c-6760-4812-a533-a120dde841e7"]')) {
+                console.log('Umami Analytics ya está cargado');
+                return;
+            }
+
+            // Buscar el head más externo (fuera del iframe de Streamlit)
+            var targetHead = window.parent.document.head || document.head;
+
+            // Crear el script de Umami
+            var script = document.createElement('script');
+            script.defer = true;
+            script.src = 'https://analytics.sprintjudicial.com/script.js';
+            script.setAttribute('data-website-id', '7e0efd1c-6760-4812-a533-a120dde841e7');
+
+            // Añadir listeners para verificar carga
+            script.onload = function() {
+                console.log('✅ Umami Analytics cargado exitosamente');
+            };
+            script.onerror = function() {
+                console.error('❌ Error al cargar Umami Analytics');
+            };
+
+            // Inyectar en el head
+            try {
+                targetHead.appendChild(script);
+                console.log('📊 Script de Umami Analytics inyectado en el head');
+            } catch (e) {
+                // Si falla acceder al parent, intentar en el head local
+                console.warn('No se pudo acceder al parent head, usando head local:', e);
+                document.head.appendChild(script);
+                console.log('📊 Script de Umami Analytics inyectado en el head local');
+            }
         }
 
-        // Crear el elemento script
-        var script = document.createElement('script');
-        script.defer = true;
-        script.src = 'https://analytics.sprintjudicial.com/script.js';
-        script.setAttribute('data-website-id', '7e0efd1c-6760-4812-a533-a120dde841e7');
+        // Ejecutar inmediatamente
+        injectUmamiScript();
 
-        // Inyectar en el head
-        document.head.appendChild(script);
-
-        console.log('Umami Analytics inicializado correctamente');
+        // También ejecutar cuando el DOM esté completamente cargado (por si acaso)
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', injectUmamiScript);
+        }
     })();
     </script>
     """
-    components.html(analytics_script, height=0, width=0)
+
+    # Usar st.html si está disponible (Streamlit 1.31+), sino usar components.html
+    try:
+        st.html(analytics_script)
+    except AttributeError:
+        # Fallback a components.html para versiones anteriores
+        components.html(analytics_script, height=0, width=0)
 
 
 # Configuración de página Streamlit
