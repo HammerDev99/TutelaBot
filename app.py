@@ -177,6 +177,11 @@ st.set_page_config(
     menu_items=APP_IDENTITY["menu_items"],
 )
 
+# Inyectar script de analítica desde secrets
+if hasattr(st, "secrets") and "analytics" in st.secrets and "script_tag" in st.secrets.analytics:
+    analytics_script = st.secrets.analytics.script_tag
+    components.html(analytics_script, height=0)
+
 
 # Decorador para manejo de errores con retries
 def handle_error(max_retries=2):
