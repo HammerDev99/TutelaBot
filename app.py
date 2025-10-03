@@ -175,11 +175,14 @@ def inject_analytics():
     if hasattr(st, "secrets") and "ANALYTICS_SCRIPT" in st.secrets:
         script = f"""
         <script>
-            var script = parent.document.createElement('script');
-            script.defer = true;
-            script.src = 'https://analytics.sprintjudicial.com/script.js';
-            script.setAttribute('data-website-id', '7e0efd1c-6760-4812-a533-a120dde841e7');
-            parent.document.head.appendChild(script);
+            // Verificar si el script ya existe para evitar duplicados
+            if (!parent.document.querySelector('script[data-website-id="7e0efd1c-6760-4812-a533-a120dde841e7"]')) {{
+                var script = parent.document.createElement('script');
+                script.defer = true;
+                script.src = 'https://analytics.sprintjudicial.com/script.js';
+                script.setAttribute('data-website-id', '7e0efd1c-6760-4812-a533-a120dde841e7');
+                parent.document.head.appendChild(script);
+            }}
         </script>
         """
         components.html(script, height=0)
