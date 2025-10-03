@@ -171,9 +171,9 @@ APP_VERSION = APP_IDENTITY["version"]
 
 # Función para inyectar analytics desde secrets
 def inject_analytics():
-    """Inyecta el script de analytics en el head si está configurado en secrets"""
+    """Inyecta el script de analytics en el head del documento"""
     if hasattr(st, "secrets") and "ANALYTICS_SCRIPT" in st.secrets:
-        components.html(st.secrets.ANALYTICS_SCRIPT, height=0)
+        st.html(st.secrets.ANALYTICS_SCRIPT)
 
 
 # Configuración de página Streamlit
