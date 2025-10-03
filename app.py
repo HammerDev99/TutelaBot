@@ -171,18 +171,9 @@ APP_VERSION = APP_IDENTITY["version"]
 
 # Función para inyectar analytics desde secrets
 def inject_analytics():
-    """Inyecta el script de analytics accediendo al parent document"""
+    """Inyecta el script de analytics en el head del documento"""
     if hasattr(st, "secrets") and "ANALYTICS_SCRIPT" in st.secrets:
-        script = f"""
-        <script>
-            var script = parent.document.createElement('script');
-            script.defer = true;
-            script.src = 'https://analytics.sprintjudicial.com/script.js';
-            script.setAttribute('data-website-id', '7e0efd1c-6760-4812-a533-a120dde841e7');
-            parent.document.head.appendChild(script);
-        </script>
-        """
-        components.html(script, height=0)
+        st.html(st.secrets.ANALYTICS_SCRIPT)
 
 
 # Configuración de página Streamlit
