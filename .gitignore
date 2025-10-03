@@ -25,3 +25,5 @@ secrets.toml
 
 # Carpetas de datos
 assets/
+ANALYTICS_IMPLEMENTATION.md
+ANALYTICS_QUICK_GUIDE.md

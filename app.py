@@ -173,14 +173,19 @@ APP_VERSION = APP_IDENTITY["version"]
 def inject_analytics():
     """Inyecta el script de analytics accediendo al parent document"""
     if hasattr(st, "secrets") and "ANALYTICS_SCRIPT" in st.secrets:
+        # Extraer el website-id del secret para hacerlo genérico
+        import re
+        website_id_match = re.search(r'data-website-id="([^"]+)"', st.secrets.ANALYTICS_SCRIPT)
+        website_id = website_id_match.group(1) if website_id_match else ""
+
         script = f"""
         <script>
             // Verificar si el script ya existe para evitar duplicados
-            if (!parent.document.querySelector('script[data-website-id="7e0efd1c-6760-4812-a533-a120dde841e7"]')) {{
+            if (!parent.document.querySelector('script[data-website-id="{website_id}"]')) {{
                 var script = parent.document.createElement('script');
                 script.defer = true;
                 script.src = 'https://analytics.sprintjudicial.com/script.js';
-                script.setAttribute('data-website-id', '7e0efd1c-6760-4812-a533-a120dde841e7');
+                script.setAttribute('data-website-id', '{website_id}');
                 parent.document.head.appendChild(script);
             }}
         </script>
